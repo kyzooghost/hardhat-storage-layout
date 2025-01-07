@@ -77,6 +77,7 @@ export class StorageLayout {
         // TODO: export the storage layout to the ./storageLayout/output.md
       }
     }
+    fs.writeFileSync(path.join(outputDirectory, "output.json"), JSON.stringify(data.contracts, null, 2));
     const prettifier = new Prettify(data.contracts);
     prettifier.tabulate();
   }
