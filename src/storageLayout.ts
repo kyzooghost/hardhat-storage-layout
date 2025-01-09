@@ -47,36 +47,57 @@ export class StorageLayout {
       } = await this.env.artifacts.readArtifact(fullName);
       names.push({ sourceName, contractName });
     }
+    /*
+      Example element in `names`
+      {
+        sourceName: '@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol',
+        contractName: 'ERC165Upgradeable'
+      },
+    */  
     names.sort((a, b) => a.contractName.localeCompare(b.contractName));
 
     const data: Table = { contracts: [] };
-    for (const { sourceName, contractName } of names) {
-      for (const artifactJsonABI of artifacts) {
+    for (const artifactJsonABI of artifacts) {
+      // First pass to get astIds (in this artifactJson) of all @openzeppelin/contracts-upgradeable storage slots
+      const openZeppelinContractsUpgradeableStorageSlotAstIds = new Set();
+      for (const { sourceName, contractName } of names) {
+        if (!sourceName.startsWith("@openzeppelin/contracts-upgradeable")) continue;
         const storage =
           artifactJsonABI.data.output?.contracts?.[sourceName]?.[contractName]
             ?.storageLayout?.storage;
-        if (!storage) {
-          continue;
+        if (!storage) continue;
+        for (const stateVariable of storage) {
+          openZeppelinContractsUpgradeableStorageSlotAstIds.add(stateVariable.astId)
         }
+      }
+
+      // Second pass to get relevant storage slots
+      for (const { sourceName, contractName } of names) {
+        // Ignore OpenZeppelin contracts
+        if (sourceName.startsWith("@openzeppelin")) continue;
+        const storage =
+          artifactJsonABI.data.output?.contracts?.[sourceName]?.[contractName]
+            ?.storageLayout?.storage;
+        if (!storage) continue;
         const contract: Row = { name: contractName, stateVariables: [] };
         for (const stateVariable of storage) {
+          // Skip and do not include @openzeppelin/contracts-upgradeable storage slots
+          if (openZeppelinContractsUpgradeableStorageSlotAstIds.has(stateVariable.astId)) continue;
           contract.stateVariables.push({
             name: stateVariable.label,
             slot: stateVariable.slot,
             offset: stateVariable.offset,
             type: stateVariable.type,
-            idx: artifactJsonABI.idx,
-            artifact: artifactJsonABI.source,
+            source: sourceName,
             numberOfBytes:
               artifactJsonABI.data.output?.contracts[sourceName][contractName]
                 .storageLayout.types[stateVariable.type].numberOfBytes
           });
         }
         data.contracts.push(contract);
-
-        // TODO: export the storage layout to the ./storageLayout/output.md
       }
     }
+    fs.writeFileSync(path.join(outputDirectory, "output.json"), JSON.stringify(data.contracts, null, 2));
     const prettifier = new Prettify(data.contracts);
     prettifier.tabulate();
   }

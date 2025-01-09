@@ -24,9 +24,8 @@ export class Prettify {
           { name: "storage_slot", alignment: "center" },
           { name: "offset", alignment: "center" },
           { name: "type", alignment: "center" },
-          { name: "idx", alignment: "center" },
-          { name: "artifact", alignment: "center" },
-          { name: "numberOfBytes", alignment: "center" }
+          { name: "numberOfBytes", alignment: "center" },
+          { name: "source", alignment: "center" }
         ]
       });
 
@@ -39,9 +38,8 @@ export class Prettify {
               storage_slot: stateVariable.slot,
               offset: stateVariable.offset,
               type: stateVariable.type,
-              idx: stateVariable.idx,
-              artifact: stateVariable.artifact,
-              numberOfBytes: stateVariable.numberOfBytes
+              numberOfBytes: stateVariable.numberOfBytes,
+              source: stateVariable.source,
             });
           }
         }
